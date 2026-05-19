@@ -4,31 +4,34 @@ import tkinter as tk
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
-WALK_SPEED = 3 * 4
-IDLE_DELAY = 200
+IDLE_DELAY = 220
 WALK_DELAY = 120
+WALK_SPEED = 15
+
+IDLE_PATHS = [
+    os.path.join(BASE, 'assets', 'idle', f'idle{i}.png')
+    for i in range(1, 4)
+]
+LEFT_PATHS = [
+    os.path.join(BASE, 'assets', 'walk', 'left', f'walk2left{i}.png')
+    for i in range(1, 4)
+]
+RIGHT_PATHS = [
+    os.path.join(BASE, 'assets', 'walk', 'right', f'walk2right{i}.png')
+    for i in range(1, 4)
+]
+UP_PATHS = [
+    os.path.join(BASE, 'assets', 'up-down', f'Screenshot (351){suffix}.png')
+    for suffix in ('', '2', '3')
+]
+DOWN_PATHS = UP_PATHS
 
 ACTION_FRAMES = {
-    'idle': [
-        os.path.join(BASE, 'assets', 'idle', f'idle{i}.png')
-        for i in range(1, 4)
-    ],
-    'walk_left': [
-        os.path.join(BASE, 'assets', 'walk', 'left', f'walk2left{i}.png')
-        for i in range(1, 4)
-    ],
-    'walk_right': [
-        os.path.join(BASE, 'assets', 'walk', 'right', f'walk2right{i}.png')
-        for i in range(1, 4)
-    ],
-    'walk_up': [
-        os.path.join(BASE, 'assets', 'up-down', f'Screenshot (351){suffix}.png')
-        for suffix in ('', '2', '3')
-    ],
-    'walk_down': [
-        os.path.join(BASE, 'assets', 'up-down', f'Screenshot (351){suffix}.png')
-        for suffix in ('', '2', '3')
-    ],
+    'idle': IDLE_PATHS,
+    'walk_left': LEFT_PATHS,
+    'walk_right': RIGHT_PATHS,
+    'walk_up': UP_PATHS,
+    'walk_down': DOWN_PATHS,
 }
 
 ACTION_DELAYS = {
@@ -47,99 +50,95 @@ ACTION_MOVE = {
     'walk_down': (0, WALK_SPEED),
 }
 
+ACTION_WEIGHTS = [5, 2, 2, 2, 2]
+ACTIONS = list(ACTION_FRAMES.keys())
 
-class RatApp:
-    def __init__(self) -> None:
-        self.root = tk.Tk()
-        self.root.overrideredirect(True)
-        self.root.wm_attributes('-topmost', True)
-        self.root.bind_all('<KeyPress-0>', self.shutdown)
-        self.root.bind_all('<KeyPress-KP_0>', self.shutdown)
+root = tk.Tk()
+root.overrideredirect(True)
+root.wm_attributes('-topmost', True)
+root.bind_all('<KeyPress-0>', lambda event: root.destroy())
+root.bind_all('<KeyPress-KP_0>', lambda event: root.destroy())
 
-        self.frames = {
-            action: [tk.PhotoImage(file=path) for path in paths]
-            for action, paths in ACTION_FRAMES.items()
-        }
+frames = {
+    action: [tk.PhotoImage(file=path) for path in paths]
+    for action, paths in ACTION_FRAMES.items()
+}
 
-        self.pet_w = self.frames['idle'][0].width()
-        self.pet_h = self.frames['idle'][0].height()
+pet_w = frames['idle'][0].width()
+pet_h = frames['idle'][0].height()
+screen_w = root.winfo_screenwidth()
+screen_h = root.winfo_screenheight()
+max_x = max(0, screen_w - pet_w)
+max_y = max(0, screen_h - pet_h)
 
-        self.screen_w = self.root.winfo_screenwidth()
-        self.screen_h = self.root.winfo_screenheight()
-        self.min_x = 0
-        self.min_y = 0
-        self.max_x = max(0, self.screen_w - self.pet_w)
-        self.max_y = max(0, self.screen_h - self.pet_h)
+label = tk.Label(root, bd=0)
+label.pack()
 
-        self.pet_x = self.screen_w // 2
-        self.pet_y = self.screen_h // 2
-
-        self.current_action = 'idle'
-        self.frame_index = 0
-        self.frames_left = random.randint(3, 8)
-
-        self.label = tk.Label(self.root, bd=0)
-        self.label.pack()
-
-        self.root.geometry(f'{self.pet_w}x{self.pet_h}+{self.pet_x}+{self.pet_y}')
-        self.root.after(0, self.update)
-
-    def choose_action(self) -> str:
-        return random.choices(
-            ['idle', 'walk_left', 'walk_right', 'walk_up', 'walk_down'],
-            weights=[5, 2, 2, 2, 2],
-            k=1,
-        )[0]
-
-    def start_action(self, action: str) -> None:
-        self.current_action = action
-        self.frame_index = 0
-        self.frames_left = random.randint(3, 8) if action == 'idle' else random.randint(1, 4)
-
-    def bounce_if_needed(self) -> None:
-        if self.pet_x <= self.min_x:
-            self.pet_x = self.min_x
-            if self.current_action == 'walk_left':
-                self.start_action('walk_right')
-        elif self.pet_x >= self.max_x:
-            self.pet_x = self.max_x
-            if self.current_action == 'walk_right':
-                self.start_action('walk_left')
-
-        if self.pet_y <= self.min_y:
-            self.pet_y = self.min_y
-            if self.current_action == 'walk_up':
-                self.start_action('walk_down')
-        elif self.pet_y >= self.max_y:
-            self.pet_y = self.max_y
-            if self.current_action == 'walk_down':
-                self.start_action('walk_up')
-
-    def update(self) -> None:
-        frames = self.frames[self.current_action]
-        self.label.configure(image=frames[self.frame_index])
-
-        dx, dy = ACTION_MOVE[self.current_action]
-        self.pet_x += dx
-        self.pet_y += dy
-        self.bounce_if_needed()
-        self.root.geometry(f'{self.pet_w}x{self.pet_h}+{self.pet_x}+{self.pet_y}')
-
-        self.frame_index += 1
-        if self.frame_index >= len(frames):
-            self.frame_index = 0
-            self.frames_left -= 1
-            if self.frames_left <= 0:
-                self.start_action(self.choose_action())
-
-        self.root.after(ACTION_DELAYS[self.current_action], self.update)
-
-    def shutdown(self, event=None) -> None:
-        self.root.destroy()
-
-    def run(self) -> None:
-        self.root.mainloop()
+pet_x = screen_w // 2
+pet_y = screen_h // 2
+current_action = 'idle'
+frame_index = 0
+loops_left = random.randint(3, 8)
 
 
-if __name__ == '__main__':
-    RatApp().run()
+def start_action(action: str) -> None:
+    global current_action, frame_index, loops_left
+    current_action = action
+    frame_index = 0
+    loops_left = random.randint(3, 8) if action == 'idle' else random.randint(1, 4)
+
+
+def choose_action() -> str:
+    return random.choices(ACTIONS, weights=ACTION_WEIGHTS, k=1)[0]
+
+
+def clamp_position() -> None:
+    global pet_x, pet_y
+    pet_x = max(0, min(max_x, pet_x))
+    pet_y = max(0, min(max_y, pet_y))
+
+
+def update() -> None:
+    global frame_index, loops_left, pet_x, pet_y
+
+    action_frames = frames[current_action]
+    label.configure(image=action_frames[frame_index])
+
+    dx, dy = ACTION_MOVE[current_action]
+    pet_x += dx
+    pet_y += dy
+
+    if pet_x <= 0 and current_action == 'walk_left':
+        pet_x = 0
+        start_action('walk_right')
+        action_frames = frames[current_action]
+    elif pet_x >= max_x and current_action == 'walk_right':
+        pet_x = max_x
+        start_action('walk_left')
+        action_frames = frames[current_action]
+
+    if pet_y <= 0 and current_action == 'walk_up':
+        pet_y = 0
+        start_action('walk_down')
+        action_frames = frames[current_action]
+    elif pet_y >= max_y and current_action == 'walk_down':
+        pet_y = max_y
+        start_action('walk_up')
+        action_frames = frames[current_action]
+
+    clamp_position()
+    root.geometry(f'{pet_w}x{pet_h}+{pet_x}+{pet_y}')
+
+    frame_index += 1
+    if frame_index >= len(action_frames):
+        frame_index = 0
+        loops_left -= 1
+        if loops_left <= 0:
+            start_action(choose_action())
+
+    root.after(ACTION_DELAYS[current_action], update)
+
+
+root.geometry(f'{pet_w}x{pet_h}+{pet_x}+{pet_y}')
+root.after(0, update)
+root.mainloop()
