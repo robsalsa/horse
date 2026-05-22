@@ -1,0 +1,19 @@
+{
+  "name": "McBeth",
+  "strength": 3,
+  "endurance": 2,
+  "dexterity": 3,
+  "intelligence": 1,
+  "agility": 3,
+  "happiness": 5,
+  "hunger": 5,
+  "play_drive": 5,
+  "freshness": 5,
+  "base_personality": "calm",
+  "current_personality": "calm",
+  "goofy_active": 0,
+  "stats_generated": 1,
+  "minigame_level": 1,
+  "games_played": 1,
+  "win_streak": 1
+}
